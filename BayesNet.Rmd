@@ -1,0 +1,124 @@
+### Diagnostic Bayesian Network
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+
+# Load packages 
+library(tidyverse)
+library(knitr)
+library(kableExtra)
+library(sjPlot)
+library(DiagrammeR)
+```
+
+Consider a particular medical condition $C$ with $\frac{1}{12}$ prevalence in the population.
+
+$$P(C_+) = \frac{1}{12}$$
+
+$$P(C_o) = 1 - P(C_+) =  \frac{11}{12}$$
+ <br>
+ 
+There are two tests for this condition and doctors randomly choose test 1 $(T_1)$ with probability $\frac{1}{3}$ and test 2 $(T_2)$ with probability $\frac{2}{3}$. 
+
+$$P(T_1) = \frac{1}{3}$$  
+
+
+$$P(T_2) = \frac{2}{3}$$
+ <br>
+ 
+If a given individual has the condition $(C_+)$, test 1 would correctly identify this with probability $1$ and test 2 would correctly identify this with probability $\frac{5}{6}$.
+
+$$P(T^+|T_1 \cap C_+) = 1$$   
+$$P(T^+|T_2 \cap C_+) = \frac{5}{6}$$
+<br>
+
+$$P(T^o|T_1 \cap C_+) = 1 - P(T^+|T_1 \cap C_+) = 0$$ 
+$$P(T^o|T_2 \cap C_+) = 1 - P(T^+|T_2 \cap C_+) = \frac{1}{6}$$
+<br>
+
+If a given individual does not have the condition $(C_o)$, test 1 correctly identifies this with probability $\frac{1}{2}$ and test 2 correctly identifies this with probability $\frac{3}{4}$.
+
+$$P(T^o | T_1 \cap C_o) = \frac{1}{2}$$ 
+$$P(T^o | T_2 \cap C_o) = \frac{3}{4}$$
+<br>
+
+$$P(T^+ | T_1 \cap C_o) = 1 - P(T^o | T_1 \cap C_o) = \frac{1}{2}$$
+$$P(T^+ | T_2 \cap C_o) = 1 - P(T^o | T_2 \cap C_o) = \frac{1}{4}$$
+<br>
+
+Imagine an individual is chosen completely at random from the population, they receive one of the tests, and the test comes out positive $(T^+)$. What is the probability that the individual actually has the disease $P(C_+|T^+)$?
+<br>
+
+<center>
+```{r}
+nodes_df <- create_node_df(n = 15,
+                           type = "b",
+                           shape = c("circle","circle","circle","circle","circle","circle","circle",                        "rectangle","rectangle","rectangle","rectangle","rectangle","rectangle","rectangle","rectangle"),
+                           width = 0.8,
+                           fillcolor = "white",
+                           label = c("Condition?",
+                                             "Present",
+                                             "Absent",
+                                             "Test 1",
+                                             "Test 2",
+                                             "Test 1",
+                                             "Test 2",
+                                             "True Pos.",
+                                             "False Neg.",
+                                             "True Pos.",
+                                             "False Neg.",
+                                             "False Pos.",
+                                             "True Neg.",
+                                             "False Pos.",
+                                             "True Neg."))
+
+edges_df <- create_edge_df(from = c(1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7),
+                        to = c(2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15),
+                       label = c("1/12", "11/12", "1/3","2/3","1/3","2/3","1","0","5/6","1/6","1/2","1/2","1/4","3/4"),
+                       labelfontsize = 20)
+
+graph <- create_graph(nodes_df, 
+                      edges_df)
+
+# View the graph
+render_graph(graph,
+             layout = "tree")
+
+```
+</center>
+
+<center>
+*Using the formula for conditional probability:*
+$$P(C_+|T^+) = \frac{P(T^+ \cap C_+)}{P(T^+)}$$
+*The probability of a positive test is the sum of the probabilities of a true positive test and a false positive test.*
+<center>
+$$P(T^+) = P(T^+ \cap C_+) + P(T^+ \cap C_o)$$
+<br>
+
+*The probability of a true positive test:*
+$$P(T^+ \cap C_+) = P(T^+ \cap T_1 \cap C_+) + P(T^+ \cap T_2 \cap C_+)$$
+$$ = P(T^+|T_1 \cap C_+)P(T_1 \cap C_+) + P(T^+|T_2 \cap C_+)P(T_2 \cap C_+)$$
+$$ = P(T^+|T_1 \cap C_+)P(T_1)P(C_+) + P(T^+|T_2 \cap C_+)P(T_2)P(C_+)$$
+<br>
+
+*The probability of a false positive test:*
+$$P(T^+ \cap C_o) = P(T^+ \cap T_1 \cap C_o) + P(T^+ \cap T_2 \cap C_o)$$
+$$ = P(T^+|T_1 \cap C_o)P(T_1 \cap C_o) + P(T^+|T_2 \cap C_o)P(T_2 \cap C_o)$$
+$$ = P(T^+|T_1 \cap C_o)P(T_1)P(C_o) + P(T^+|T_2 \cap C_o)P(T_2)P(C_o)$$
+<br>
+$$P(C_+|T^+) = \frac{P(T^+|T_1 \cap C_+)P(T_1)P(C_+) + P(T^+|T_2 \cap C_+)P(T_2)P(C_+)}{P(T^+|T_1 \cap C_+)P(T_1)P(C_+) + P(T^+|T_2 \cap C_+)P(T_2)P(C_+) + P(T^+|T_1 \cap C_o)P(T_1)P(C_o) + P(T^+|T_2 \cap C_o)P(T_2)P(C_o)}$$
+
+ $$ = \frac{(1)(\frac{1}{3})(\frac{1}{12}) + (\frac{5}{6})(\frac{2}{3})(\frac{1}{12})}{(1)(\frac{1}{3})(\frac{1}{12}) + (\frac{5}{6})(\frac{2}{3})(\frac{1}{12}) + (\frac{1}{2})(\frac{1}{3})(\frac{11}{12}) + (\frac{1}{4})(\frac{2}{3})(\frac{11}{12})}$$
+<br>
+
+
+$$P(C_+|T^+) = \frac{8}{41} \approx 0.195$$
+ <br>
+ 
+**Approximately 1 in 5 positively tested patients will actually have the condition.**
+</center>
+
+<br>
+ 
+ 
